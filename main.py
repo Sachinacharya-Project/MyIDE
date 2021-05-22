@@ -1,6 +1,95 @@
 from tkinter import Menu, Text, Tk, END, filedialog, messagebox, RAISED, Y, PhotoImage
-import subprocess, math, os, pathlib
-os.system('cls')
+import subprocess, os, math,pathlib, argparse, webbrowser
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--type", help="Shows what type of file you are editing example python(py) or php(php)")
+arguments = parser.parse_args()
+def set_executor(operator='py'):
+    global executor, extension
+    functions = [
+        (
+            'python', 
+            [
+                'py'
+            ]
+        ),
+        (
+            'node', 
+            [
+                'js'
+            ]
+        ), 
+        (
+            'php',
+            [
+                'php'
+            ]
+        ),
+        (
+            'C/C++',
+            [
+                'c',
+                'cpp'
+            ]
+        )
+    ]
+    for name, extension in functions:
+        for limitedExtension in extension:
+            if operator == limitedExtension:
+                executor = name
+                extension = limitedExtension
+    try:
+        menu_bar.delete("Server (localhost: 8000)")
+    except:
+        pass
+    if executor == 'php' or executor == 'html':
+        try:
+            menu_bar.add_command(label='Server (localhost: 8000)', command=server, accelerator="Ctrl+L")
+            compiler.config(menu=menu_bar)
+            compiler.bind('<Control-l>', server)
+            compiler.bind('<Control-L>', server)
+        except:
+            pass
+    
+passedArg = arguments.type
+if(passedArg is not None):
+    extension_lists = [
+        (
+            'python', 
+            [
+                'py'
+            ]
+        ), 
+        (
+            'node', 
+            [
+                'js'
+            ]
+        ), 
+        (
+            'php',
+            [
+                'php'
+            ]
+        ),
+        (
+            'C/C++',
+            [
+                'c',
+                'cpp'
+            ]
+        )
+    ]
+    for compilerName, exten in extension_lists:
+        if compilerName == passedArg or passedArg in exten:
+            if compilerName != passedArg:
+                set_executor(passedArg)
+            else:
+                set_executor(exten[0])
+else:
+    executor = 'python'
+    extension = 'py'
+# os.system('cls')
 act = pathlib.Path(__file__).parent.absolute()
 pathlike = os.path.join(act, 'icon.ico')
 
@@ -8,31 +97,27 @@ Font_tuple = ("Segoe UI", 10, "normal")
 compiler = Tk()
 compiler.minsize(1000, 300)
 compiler.maxsize(None, 800)
-compiler.title('Python Programmer | Root (Python)')
+compiler.title('Python Programmer | Root ({})'.format(executor.capitalize()))
 compiler.iconbitmap('icon.ico')
 compiler.geometry('1000x700')
 file_path=''
-executor = 'python'
-extension = 'py'
 # Function
 def set_file_path(path):
     global file_path
     file_path = path
-def set_executor(operator='py'):
-    global executor, extension
-    functions = [('python', ('py')), ('node', ['js'])]
-    for name, extension in functions:
-        for limitedExtension in extension:
-            if operator == limitedExtension:
-                executor = name
-                extension = limitedExtension
 def savaandrun(_=''):
     save_file()
     run()
 def astr(_=''):
     "Run Fucntion without Prompting to be executed"
     try:
-        _filename = 'tempcode.myide.{}'.format(extension)
+        if len(extension) > 0:
+            execten = extension[0]
+        else:
+            execten = extension
+        if execten == 'c':
+            execten = 'cpp'
+        _filename = 'tempcode.myide.{}'.format(execten)
         with open(_filename, 'w') as file:
             code = editor.get('1.0', END)
             file.write(code)
@@ -48,7 +133,18 @@ def run(_='',datatype='normal', fileloc='def'):
         if fileloc == '':
             save_as()
         command = f'{executor} {fileloc}'
+        cd = False
+        if executor == 'C/C++':
+            filename = ''
+            if '.c' in str(fileloc):
+                filename = fileloc.replace('.c', '') #.split('/')[-1]
+            elif '.cpp' in str(fileloc):
+                filename = fileloc.replace('.cpp', '')# .split['/'][-1]
+            command = f'g++ {fileloc} -o {filename}'
+            cd = True
         subprocess.run(['powershell.exe', '-Command', command])
+        if cd:
+            os.startfile(f"{filename}.exe")
         # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         # output, error = process.communicate()
         # if error:
@@ -57,14 +153,14 @@ def run(_='',datatype='normal', fileloc='def'):
         #     code_out.configure(fg='white')
         code_out.configure(state='normal')
         # code_out.insert('1.0', output)
-        code_out.insert('1.0', 'Successfull')
+        code_out.insert('1.0', 'Successfull\n')
         # code_out.insert('1.0',  error)
         code_out.configure(state='disabled')
         # code_out.insert('1.0', 'Output\n')
 def file(_=''):
     print("Null")
 def save_as(_=''):
-    saved = filedialog.asksaveasfilename(title='Save File as', filetypes=(('Python', '*.py'), ('JavaScript', '*.js'), ('All Files', ('*.*'))))
+    saved = filedialog.asksaveasfilename(title='Save File as', defaultextension='.{}'.format(extension), filetypes=(('Default', extension), ('Python', '*.py'), ('JavaScript', '*.js'), ('php', '*.php'), ('C/C++', ('c', 'cpp')),('All Files', ('*.*'))))
     try:
         with open(saved, 'w') as file:
             code = editor.get('1.0', END)
@@ -80,7 +176,7 @@ def save_as(_=''):
         code_out.insert('1.0','Sorry! File cannot be created\n')
         code_out.configure(state='disabled')
 def open_files(_=''):
-    saved = filedialog.askopenfilename(title='Open Files', filetypes=(('Python', '*.py'), ('JavaScript', '*.js'), ('All Files', '*.*')))
+    saved = filedialog.askopenfilename(title='Open Files', filetypes=(('Default', extension), ('Python', '*.py'), ('JavaScript', '*.js'), ('php', '*.php'), ('C/C++', ('c', 'cpp')) ,('All Files', '*.*')))
     try:
         with open(saved, 'r') as file:
             code = file.read()
@@ -98,6 +194,9 @@ def clear_func(_=''):
     code_out.delete('1.0', END)
     code_out.configure(state='disabled')
     subprocess.run(['powershell', '-Command', 'clear'])
+def server(port=8000):
+    os.startfile("{}\\Server.bat".format(act))
+    webbrowser.open("http://localhost:8000/");
 def save_file(_=''):
     if file_path == '':
         save_as()
@@ -114,7 +213,7 @@ def save_file(_=''):
             code_out.insert('1.0',f'Cannot Save the File\n')
             code_out.configure(state='disabled')
 def create_new_doc(_=''):
-    saved = filedialog.asksaveasfilename(title='Create New File', filetypes=(('Python Files', '*.py'), ('JavaScript', '*.js'),('All Files', '*.*')))
+    saved = filedialog.asksaveasfilename(title='Create New File', filetypes=(('Default', extension), ('Python Files', '*.py'), ('JavaScript', '*.js'), ('php', '*.php'), ('C/C++', ('c', 'cpp')), ('All Files', '*.*')))
     with open(saved, 'w') as file:
         code_out.configure(state='normal')
         code_out.insert('1.0',f'File {saved} has been created\n\n')
@@ -127,11 +226,11 @@ def create_new_doc(_=''):
 def clearRun(_=''):
     astr()
     clear_func()
-    # MENU BARS
 menuarrays = [
     ('File', [('New File', create_new_doc, 'Ctrl+N'), ('separator', '', '') ,('Open', open_files, 'Ctrl+O'), ('Save', save_file, 'Ctrl+S'), ('Save as', save_as, 'Ctrl+Shift+S'), ('separator', '', ''), ('Run', run, 'Ctrl+R'), ('separator', '', ''),('Settings', file, ''), ('Close', exit, 'Ctrl+Q')]),
     ('Run', [('Run', astr, ''), ('Save and Run', savaandrun, 'Ctrl+Shift+A'), ('Clear and Run', clearRun, '')]),
 ]
+global menu_bar
 menu_bar = Menu(compiler)
 menu_bar.configure(font = Font_tuple)
 for top, name in menuarrays:
@@ -146,6 +245,10 @@ for top, name in menuarrays:
     menu_bar.add_cascade(label=top, menu=barname)
     # menu_bar.bind_all('<Control-o>', open_files)
 menu_bar.add_command(label='Clear Console', command=clear_func, accelerator='Ctrl+C')
+if executor == 'php' or executor == 'html':
+    menu_bar.add_command(label='Server (localhost: 8000)', command=server, accelerator="Ctrl+L")
+    compiler.bind('<Control-l>', server)
+    compiler.bind('<Control-L>', server)
 compiler.config(menu=menu_bar)
 compiler.bind('<Control-o>', open_files)
 compiler.bind('<Control-O>', open_files)
@@ -163,6 +266,7 @@ compiler.bind('<Control-C>', clear_func)
 compiler.bind('<Control-c>', clear_func)
 compiler.bind('<Control-Shift-R>', savaandrun)
 compiler.bind('<Control-Shift-r>', savaandrun)
+
 # TEXT INPUT
 editor = Text(
     background='#333',
